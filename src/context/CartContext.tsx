@@ -18,6 +18,9 @@ interface CartContextProps {
   clearCart: () => void;
   updateQuantity: (productId: number, quantity: number) => void;
   total: number;
+  applyCoupon: (code: string) => void;
+  error: string | null;
+  discount: number;
 }
 
 const CartContext = createContext<CartContextProps | undefined>(undefined);
@@ -31,11 +34,13 @@ export const useCart = () => {
 };
 
 const CART_STORAGE_KEY = "shopping_cart";
+const COUPON_CODE = "WEB3BRIDGECOHORTx";
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [discount, setDiscount] = useState<number>(0);
 
-  // 👉 Load from localStorage on component mount
   useEffect(() => {
     const savedCart = localStorage.getItem(CART_STORAGE_KEY);
     if (savedCart) {
@@ -43,7 +48,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // 👉 Save to localStorage whenever the cart changes
   useEffect(() => {
     if (cart.length > 0) {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -52,7 +56,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cart]);
 
-  // 👉 Add to Cart
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existingProduct = prevCart.find((item) => item.id === product.id);
@@ -67,20 +70,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // 👉 Remove from Cart
   const removeFromCart = (productId: number) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
-  // 👉 Clear Cart
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem(CART_STORAGE_KEY); // 🗑️ Remove from localStorage
+    localStorage.removeItem(CART_STORAGE_KEY);
   };
 
-  // 👉 Update Quantity
   const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity < 1) return;
+    if (quantity < 1) {
+      setError("Quantity cannot be less than 1");
+      return;
+    }
+    setError(null);
     setCart((prevCart) =>
       prevCart.map((item) =>
         item.id === productId ? { ...item, quantity } : item
@@ -88,12 +92,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // 👉 Total Calculation
-  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const applyCoupon = (code: string) => {
+    if (code === COUPON_CODE) {
+      setDiscount(0.1); // 10% Discount
+      setError(null);
+    } else {
+      setDiscount(0);
+      setError("Invalid Coupon Code");
+    }
+  };
+
+  const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0) * (1 - discount);
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, clearCart, updateQuantity, total }}
+      value={{ 
+        cart, 
+        addToCart, 
+        removeFromCart, 
+        clearCart, 
+        updateQuantity, 
+        total, 
+        applyCoupon, 
+        error, 
+        discount 
+      }}
     >
       {children}
     </CartContext.Provider>
