@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface Product {
   id: number;
@@ -30,10 +30,29 @@ export const useCart = () => {
   return context;
 };
 
+const CART_STORAGE_KEY = "shopping_cart";
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Add to Cart
+  // 👉 Load from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+  }, []);
+
+  // 👉 Save to localStorage whenever the cart changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } else {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    }
+  }, [cart]);
+
+  // 👉 Add to Cart
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existingProduct = prevCart.find((item) => item.id === product.id);
@@ -48,17 +67,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Remove from Cart
+  // 👉 Remove from Cart
   const removeFromCart = (productId: number) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
-  // Clear Cart
+  // 👉 Clear Cart
   const clearCart = () => {
     setCart([]);
+    localStorage.removeItem(CART_STORAGE_KEY); // 🗑️ Remove from localStorage
   };
 
-  // Update Quantity
+  // 👉 Update Quantity
   const updateQuantity = (productId: number, quantity: number) => {
     if (quantity < 1) return;
     setCart((prevCart) =>
@@ -68,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Total Calculation
+  // 👉 Total Calculation
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   return (
