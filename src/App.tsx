@@ -1,15 +1,17 @@
-
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import ProductList from "./pages/ProductList";
-// import "./index.css"
+import Cart from "./pages/Cart";
 
-const App = () => {
+const App: React.FC = () => {
   return (
-    <div>
-      <h1 className="bg-green-500 text-2xl font-bold mb-4">Product List</h1>
-      <ProductList />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<ProductList />} />
+        <Route path="/cart" element={<Cart />} />
+      </Routes>
+    </Router>
   );
 };
 
 export default App;
-
